@@ -7,14 +7,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  ScrollView,
 } from 'react-native'
 import { useRef, useState, useEffect, useCallback } from 'react'
-
-const PRIORITY_STYLE = {
-  high: { color: '#EF4444', label: 'High' },
-  medium: { color: '#F59E0B', label: 'Medium' },
-  low: { color: '#10B981', label: 'Low' },
-}
+import { PRIORITIES, CATEGORIES } from '../utils/constants'
 
 export default function AddTodoModal({
   visible,
@@ -22,34 +18,35 @@ export default function AddTodoModal({
   onSubmit,
   initialTitle,
   initialPriority,
+  initialCategory,
 }) {
-  const [title, setTitle] = useState('')
+  const [title,    setTitle]    = useState('')
   const [priority, setPriority] = useState('medium')
+  const [category, setCategory] = useState('General')
   const inputRef = useRef(null)
 
   useEffect(() => {
     if (!visible) return
-
-    setTitle(initialTitle ?? '')
+    setTitle(initialTitle    ?? '')
     setPriority(initialPriority ?? 'medium')
+    setCategory(initialCategory ?? 'General')
 
-    const t = setTimeout(() => {
-      inputRef.current?.focus()
-    }, 150)
-
+    const t = setTimeout(() => inputRef.current?.focus(), 150)
     return () => clearTimeout(t)
-  }, [visible, initialTitle, initialPriority])
+  }, [visible, initialTitle, initialPriority, initialCategory])
 
   const submit = useCallback(() => {
     const trimmed = title.trim()
     if (!trimmed) return
-    onSubmit(trimmed, priority)
+    onSubmit(trimmed, priority, category)
     setTitle('')
     onClose()
-  }, [title, priority, onSubmit, onClose])
+  }, [title, priority, category, onSubmit, onClose])
+
+  const canSubmit = title.trim().length > 0
 
   return (
-    <Modal transparent visible={visible} animationType="fade">
+    <Modal transparent visible={visible} animationType="slide">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
@@ -62,6 +59,9 @@ export default function AddTodoModal({
         />
 
         <View style={styles.sheet}>
+          {/* Drag handle */}
+          <View style={styles.handle} />
+
           <Text style={styles.heading}>
             {initialTitle ? 'Edit task' : 'New task'}
           </Text>
@@ -71,44 +71,29 @@ export default function AddTodoModal({
             value={title}
             onChangeText={setTitle}
             placeholder="What do you need to do?"
+            placeholderTextColor="#9CA3AF"
             style={styles.input}
             returnKeyType="done"
             onSubmitEditing={submit}
           />
 
+          {/* Priority */}
           <Text style={styles.sectionLabel}>Priority</Text>
-
-          <View style={styles.priorityRow}>
-            {Object.keys(PRIORITY_STYLE).map(key => {
+          <View style={styles.chipRow}>
+            {PRIORITIES.map(({ key, label, color }) => {
               const active = priority === key
-              const { color, label } = PRIORITY_STYLE[key]
-
               return (
                 <Pressable
                   key={key}
                   onPress={() => setPriority(key)}
                   hitSlop={6}
                   style={[
-                    styles.priorityChip,
-                    active && {
-                      backgroundColor: color,
-                      borderColor: color,
-                      elevation: 3,
-                    },
+                    styles.chip,
+                    active && { backgroundColor: color, borderColor: color, elevation: 3 },
                   ]}
                 >
-                  <View
-                    style={[
-                      styles.priorityDot,
-                      { backgroundColor: color },
-                    ]}
-                  />
-                  <Text
-                    style={[
-                      styles.priorityText,
-                      active && styles.priorityTextActive,
-                    ]}
-                  >
+                  <View style={[styles.dot, { backgroundColor: color }]} />
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>
                     {label}
                   </Text>
                 </Pressable>
@@ -116,13 +101,39 @@ export default function AddTodoModal({
             })}
           </View>
 
+          {/* Category */}
+          <Text style={styles.sectionLabel}>Category</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chipRow}
+          >
+            {CATEGORIES.map(({ key, label, icon, color }) => {
+              const active = category === key
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => setCategory(key)}
+                  hitSlop={6}
+                  style={[
+                    styles.chip,
+                    active && { backgroundColor: color, borderColor: color, elevation: 3 },
+                  ]}
+                >
+                  <Text style={styles.catIcon}>{icon}</Text>
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                    {label}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </ScrollView>
+
+          {/* Submit */}
           <Pressable
             onPress={submit}
-            disabled={!title.trim()}
-            style={[
-              styles.submitButton,
-              !title.trim() && styles.submitDisabled,
-            ]}
+            disabled={!canSubmit}
+            style={[styles.submitButton, !canSubmit && styles.submitDisabled]}
           >
             <Text style={styles.submitText}>
               {initialTitle ? 'Update Task' : 'Add Task'}
@@ -139,26 +150,31 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
   },
-
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#00000040',
+    backgroundColor: '#00000050',
   },
-
   sheet: {
     backgroundColor: '#FFFFFF',
     padding: 16,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
+    paddingBottom: 32,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
-
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E5E7EB',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
   heading: {
     fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
+    fontWeight: '700',
     color: '#111827',
+    marginBottom: 12,
   },
-
   input: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -167,21 +183,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#111827',
   },
-
   sectionLabel: {
     marginTop: 14,
-    marginBottom: 6,
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#6B7280',
+    marginBottom: 8,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#9CA3AF',
+    letterSpacing: 0.8,
   },
-
-  priorityRow: {
+  chipRow: {
     flexDirection: 'row',
     gap: 8,
+    flexWrap: 'nowrap',
   },
-
-  priorityChip: {
+  chip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -192,39 +207,36 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
   },
-
-  priorityDot: {
+  dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
   },
-
-  priorityText: {
+  catIcon: {
+    fontSize: 13,
+  },
+  chipText: {
     fontSize: 13,
     color: '#374151',
     fontWeight: '500',
   },
-
-  priorityTextActive: {
+  chipTextActive: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontWeight: '700',
   },
-
   submitButton: {
-    marginTop: 16,
+    marginTop: 18,
     backgroundColor: '#2563EB',
-    paddingVertical: 12,
+    paddingVertical: 13,
     borderRadius: 12,
     alignItems: 'center',
   },
-
   submitDisabled: {
-    opacity: 0.5,
+    opacity: 0.45,
   },
-
   submitText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 })

@@ -1,16 +1,31 @@
+/**
+ * useNetwork.js
+ * Polls network state every 5 seconds.
+ * Fires syncService.triggerSync() on reconnect.
+ */
 import { useEffect } from 'react'
-import * as Network from 'expo-network'
 import useNetworkStore from '../store/networkStore'
+import { checkAndNotify, onReconnect } from '../services/networkService'
+import { triggerSync } from '../services/syncService'
 
 export default function useNetwork() {
-  const setOnline = useNetworkStore(s => s.setOnline)
+  const setOnline = useNetworkStore((s) => s.setOnline)
 
   useEffect(() => {
     let active = true
 
+    // Register sync trigger on reconnect
+    onReconnect(() => {
+      if (active) {
+        console.log('[useNetwork] Reconnected → triggering sync')
+        triggerSync()
+      }
+    })
+
     const check = async () => {
-      const state = await Network.getNetworkStateAsync()
-      if (active) setOnline(!!state.isConnected)
+      if (!active) return
+      const isOnline = await checkAndNotify()
+      if (active) setOnline(isOnline)
     }
 
     check()

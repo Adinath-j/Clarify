@@ -1,5 +1,5 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import AppShell from './src/app/AppShell'
+import AppShell from './src/AppShell'
 import { LogBox } from 'react-native'
 
 LogBox.ignoreLogs([

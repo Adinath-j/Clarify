@@ -1,176 +1,117 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native'
+import { View, Text, StyleSheet, SectionList } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { FlashList } from '@shopify/flash-list'
+import { useState, useCallback } from 'react'
+import * as Haptics from 'expo-haptics'
 
-import FloatingActionButton from '../components/FloatingActionButton'
-import NoteSkeleton from '../components/NoteSkeleton'
 import useNotesStore from '../store/notesStore'
+import useTheme      from '../hooks/useTheme'
+import NoteItem      from '../components/NoteItem'
+import NoteSkeleton  from '../components/NoteSkeleton'
+import FloatingActionButton from '../components/FloatingActionButton'
+import AddNoteModal  from '../components/AddNoteModal'
 
 export default function NotesScreen() {
-  const notes = useNotesStore(state => state.notes)
-  const hydrated = useNotesStore(state => state.hydrated)
+  const { colors } = useTheme()
 
-  // 🔒 GUARD: still loading from storage
+  const notes    = useNotesStore((s) => s.notes)
+  const hydrated = useNotesStore((s) => s.hydrated)
+  const addNote  = useNotesStore((s) => s.addNote)
+  const editNote = useNotesStore((s) => s.editNote)
+
+  const [modalVisible, setModalVisible] = useState(false)
+  const [editingNote, setEditingNote]   = useState(null)
+
+  const handleAdd = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    setEditingNote(null)
+    setModalVisible(true)
+  }, [])
+
+  const handleNotePress = useCallback((note) => {
+    setEditingNote(note)
+    setModalVisible(true)
+  }, [])
+
+  const handleSubmit = useCallback(({ title, body }) => {
+    if (editingNote) editNote(editingNote.id, { title, body })
+    else addNote({ title, body })
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+  }, [editingNote, addNote, editNote])
+
+  // Filter out soft-deleted notes
+  const visibleNotes = notes.filter((n) => !n.deleted)
+  const pinned   = visibleNotes.filter((n) => n.pinned)
+  const unpinned = visibleNotes.filter((n) => !n.pinned)
+
+  const sections = []
+  if (pinned.length > 0)   sections.push({ title: 'PINNED', data: pinned })
+  if (unpinned.length > 0) sections.push({ title: 'NOTES',  data: unpinned })
+
   if (!hydrated) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.container}>
-          <NoteSkeleton />
-          <NoteSkeleton />
-          <NoteSkeleton />
+      <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Notes</Text>
+        </View>
+        <View style={{ padding: 16 }}>
+          <NoteSkeleton /><NoteSkeleton /><NoteSkeleton />
         </View>
       </SafeAreaView>
     )
   }
 
-  // 📭 EMPTY STATE
-  if (notes.length === 0) {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Notes</Text>
-            <Pressable hitSlop={8}>
-              <Text style={styles.search}>⌕</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>No notes yet</Text>
-          </View>
-
-          <FloatingActionButton />
-        </View>
-      </SafeAreaView>
-    )
-  }
-
-  // ✅ NORMAL UI
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Notes</Text>
-          <Pressable hitSlop={8}>
-            <Text style={styles.search}>⌕</Text>
-          </Pressable>
-        </View>
-
-        {/* Notes List */}
-        <FlashList
-          data={notes}
-          keyExtractor={item => item.id}
-          estimatedItemSize={120}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => <NoteCard note={item} />}
-        />
-
-        <FloatingActionButton />
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Notes</Text>
+        <Text style={[styles.count, { color: colors.textMuted }]}>
+          {visibleNotes.length > 0 ? `${visibleNotes.length} note${visibleNotes.length !== 1 ? 's' : ''}` : ''}
+        </Text>
       </View>
+
+      {visibleNotes.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyIcon}>📝</Text>
+          <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No notes yet</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+            Tap the + button to create your first note
+          </Text>
+        </View>
+      ) : (
+        <SectionList
+          sections={sections}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          renderSectionHeader={({ section: { title } }) => (
+            <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>{title}</Text>
+          )}
+          renderItem={({ item }) => <NoteItem note={item} onPress={handleNotePress} />}
+          stickySectionHeadersEnabled={false}
+        />
+      )}
+
+      <FloatingActionButton onPress={handleAdd} />
+      <AddNoteModal
+        visible={modalVisible}
+        onClose={() => { setModalVisible(false); setEditingNote(null) }}
+        onSubmit={handleSubmit}
+        initialTitle={editingNote?.title}
+        initialBody={editingNote?.body}
+      />
     </SafeAreaView>
   )
 }
 
-function NoteCard({ note }) {
-  return (
-    <Pressable style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle} numberOfLines={1}>
-          {note.title}
-        </Text>
-        {note.pinned && <Text style={styles.pin}>📌</Text>}
-      </View>
-
-      <Text style={styles.preview} numberOfLines={2}>
-        {note.preview}
-      </Text>
-
-      <Text style={styles.updated}>{note.updatedAt}</Text>
-    </Pressable>
-  )
-}
-
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-
-  container: {
-    flex: 1,
-  },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
-
-  title: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#111827',
-  },
-
-  search: {
-    fontSize: 20,
-    color: '#6B7280',
-  },
-
-  listContent: {
-    padding: 16,
-    paddingBottom: 120,
-  },
-
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-  },
-
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    flex: 1,
-    paddingRight: 8,
-  },
-
-  pin: {
-    fontSize: 14,
-    color: '#9CA3AF',
-  },
-
-  preview: {
-    fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-
-  updated: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  emptyText: {
-    fontSize: 14,
-    color: '#9CA3AF',
-  },
+  safe:          { flex: 1 },
+  header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 10 },
+  title:         { fontSize: 26, fontWeight: '700' },
+  count:         { fontSize: 13, fontWeight: '500' },
+  listContent:   { paddingHorizontal: 16, paddingBottom: 120 },
+  sectionHeader: { fontSize: 11, fontWeight: '700', letterSpacing: 1.2, marginBottom: 8, marginTop: 4 },
+  emptyState:    { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 80 },
+  emptyIcon:     { fontSize: 52, marginBottom: 16 },
+  emptyTitle:    { fontSize: 18, fontWeight: '700', marginBottom: 6 },
+  emptySubtitle: { fontSize: 14, textAlign: 'center', paddingHorizontal: 40 },
 })
