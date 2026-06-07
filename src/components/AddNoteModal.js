@@ -1,33 +1,12 @@
 import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Modal,
-  ScrollView,
+  View, Text, TextInput, Pressable, StyleSheet,
+  KeyboardAvoidingView, Platform, Modal,
 } from 'react-native'
 import { useRef, useState, useEffect, useCallback } from 'react'
+import useTheme from '../hooks/useTheme'
 
-/**
- * AddNoteModal — bottom sheet modal for creating or editing a note.
- *
- * Props:
- *   visible        {boolean}  - Controls modal visibility
- *   onClose        {Function} - Called when dismissing
- *   onSubmit       {Function} - Called with { title, body }
- *   initialTitle   {string}   - Pre-fill title (edit mode)
- *   initialBody    {string}   - Pre-fill body (edit mode)
- */
-export default function AddNoteModal({
-  visible,
-  onClose,
-  onSubmit,
-  initialTitle,
-  initialBody,
-}) {
+export default function AddNoteModal({ visible, onClose, onSubmit, initialTitle, initialBody }) {
+  const { colors } = useTheme()
   const [title, setTitle] = useState('')
   const [body, setBody]   = useState('')
   const titleRef = useRef(null)
@@ -53,22 +32,12 @@ export default function AddNoteModal({
 
   return (
     <Modal transparent visible={visible} animationType="slide">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-      >
-        <Pressable
-          style={styles.overlay}
-          onPress={() => {
-            if (!title.trim() && !body.trim()) onClose()
-          }}
-        />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+        <Pressable style={styles.overlay} onPress={() => { if (!title.trim() && !body.trim()) onClose() }} />
 
-        <View style={styles.sheet}>
-          {/* Handle */}
-          <View style={styles.handle} />
-
-          <Text style={styles.heading}>
+        <View style={[styles.sheet, { backgroundColor: colors.surface }]}>
+          <View style={[styles.handle, { backgroundColor: colors.border }]} />
+          <Text style={[styles.heading, { color: colors.textPrimary }]}>
             {initialTitle ? 'Edit note' : 'New note'}
           </Text>
 
@@ -77,8 +46,8 @@ export default function AddNoteModal({
             value={title}
             onChangeText={setTitle}
             placeholder="Title"
-            placeholderTextColor="#9CA3AF"
-            style={styles.titleInput}
+            placeholderTextColor={colors.textMuted}
+            style={[styles.titleInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.surfaceAlt }]}
             returnKeyType="next"
           />
 
@@ -86,26 +55,20 @@ export default function AddNoteModal({
             value={body}
             onChangeText={setBody}
             placeholder="Add note content…"
-            placeholderTextColor="#9CA3AF"
-            style={styles.bodyInput}
+            placeholderTextColor={colors.textMuted}
+            style={[styles.bodyInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.surfaceAlt }]}
             multiline
             textAlignVertical="top"
             scrollEnabled={false}
           />
 
           <View style={styles.footer}>
-            <Pressable onPress={onClose} style={styles.cancelButton}>
-              <Text style={styles.cancelText}>Cancel</Text>
+            <Pressable onPress={onClose} style={[styles.cancelButton, { borderColor: colors.border }]}>
+              <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
             </Pressable>
-
-            <Pressable
-              onPress={submit}
-              disabled={!canSubmit}
-              style={[styles.submitButton, !canSubmit && styles.submitDisabled]}
-            >
-              <Text style={styles.submitText}>
-                {initialTitle ? 'Save changes' : 'Add Note'}
-              </Text>
+            <Pressable onPress={submit} disabled={!canSubmit}
+              style={[styles.submitButton, { backgroundColor: colors.accent }, !canSubmit && styles.submitDisabled]}>
+              <Text style={styles.submitText}>{initialTitle ? 'Save changes' : 'Add Note'}</Text>
             </Pressable>
           </View>
         </View>
@@ -115,86 +78,17 @@ export default function AddNoteModal({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#00000050',
-  },
-  sheet: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-    paddingTop: 12,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#E5E7EB',
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  heading: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 14,
-  },
-  titleInput: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 10,
-  },
-  bodyInput: {
-    fontSize: 15,
-    color: '#374151',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 12,
-    minHeight: 100,
-    marginBottom: 16,
-  },
-  footer: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 13,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    alignItems: 'center',
-  },
-  cancelText: {
-    color: '#6B7280',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  submitButton: {
-    flex: 2,
-    backgroundColor: '#2563EB',
-    paddingVertical: 13,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  submitDisabled: {
-    opacity: 0.45,
-  },
-  submitText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 15,
-  },
+  container:    { flex: 1, justifyContent: 'flex-end' },
+  overlay:      { ...StyleSheet.absoluteFillObject, backgroundColor: '#00000050' },
+  sheet:        { paddingHorizontal: 16, paddingBottom: 32, paddingTop: 12, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  handle:       { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
+  heading:      { fontSize: 18, fontWeight: '700', marginBottom: 14 },
+  titleInput:   { fontSize: 16, fontWeight: '600', borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 10 },
+  bodyInput:    { fontSize: 15, borderWidth: 1, borderRadius: 12, padding: 12, minHeight: 100, marginBottom: 16 },
+  footer:       { flexDirection: 'row', gap: 10 },
+  cancelButton: { flex: 1, paddingVertical: 13, borderRadius: 12, borderWidth: 1, alignItems: 'center' },
+  cancelText:   { fontWeight: '600', fontSize: 15 },
+  submitButton: { flex: 2, paddingVertical: 13, borderRadius: 12, alignItems: 'center' },
+  submitDisabled:{ opacity: 0.45 },
+  submitText:   { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
 })

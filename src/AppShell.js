@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import useTodoStore  from './store/todoStore'
 import useNotesStore from './store/notesStore'
+import useAuthStore  from './store/authStore'
 import useUIStore    from './store/uiStore'
 import useAppLifecycle from './hooks/useAppLifecycle'
 import useNetwork      from './hooks/useNetwork'
@@ -10,6 +11,7 @@ export default function AppShell() {
   useAppLifecycle()
   useNetwork()
 
+  const hydrateAuth  = useAuthStore((s) => s.hydrate)
   const hydrateTodos = useTodoStore((s) => s.hydrate)
   const hydrateNotes = useNotesStore((s) => s.hydrate)
   const hydrateTheme = useUIStore((s) => s.hydrateTheme)
@@ -17,11 +19,14 @@ export default function AppShell() {
   useEffect(() => {
     // Hydrate all stores on mount
     hydrateTheme()
-    hydrateTodos()
-    hydrateNotes()
-
-    // Start background sync (no-ops if Supabase not configured)
-    startSync()
+    
+    // Chain hydrations to ensure Auth is ready before syncing
+    hydrateAuth().then(() => {
+      hydrateTodos()
+      hydrateNotes()
+      // Start background sync (no-ops if Supabase not configured)
+      startSync()
+    })
 
     return () => {
       // Stop sync when app unmounts / goes to background

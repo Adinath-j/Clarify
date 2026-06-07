@@ -1,12 +1,14 @@
-import { useState } from 'react'
 import * as Haptics from 'expo-haptics'
 import { Pressable, StyleSheet, Text } from 'react-native'
+import useTheme from '../hooks/useTheme'
 
 export default function FloatingActionButton({ onPress }) {
+  const { colors } = useTheme()
+
   return (
     <Pressable
-    accessibilityLabel="Add task"
-      style={styles.fab}
+      accessibilityLabel="Add task"
+      style={[styles.fab, { backgroundColor: colors.accent }]}
       onPress={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
         onPress?.()
@@ -25,9 +27,13 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
   plus: {
     color: '#FFFFFF',

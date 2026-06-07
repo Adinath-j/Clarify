@@ -33,14 +33,30 @@ let isSyncInProgress = false
 // ─── Core Sync ───────────────────────────────────────────────────────────────
 
 export async function syncAll() {
+  console.log('[SyncService] syncAll triggered')
   // ── Guards ──────────────────────────────────────────────────────────────
-  if (isSyncInProgress)                    return
-  if (!supabase)                           return // no cloud client
+  if (isSyncInProgress) {
+    console.log('[SyncService] Aborting: Sync already in progress')
+    return
+  }
+  if (!supabase) {
+    console.log('[SyncService] Aborting: Supabase client is null')
+    return
+  }
+  
   const { isOnline }  = useNetworkStore.getState()
-  if (!isOnline)                           return
+  if (!isOnline) {
+    console.log('[SyncService] Aborting: Device is offline')
+    return
+  }
+  
   const { user }      = useAuthStore.getState()
-  if (!user?.id)                           return // not authenticated
+  if (!user?.id) {
+    console.log('[SyncService] Aborting: User is not authenticated / user ID is missing')
+    return
+  }
 
+  console.log('[SyncService] All guards passed. Proceeding with sync for user:', user.id)
   isSyncInProgress = true
 
   const { setSyncStatus, setLastSynced, lastSyncedAt } = useUIStore.getState()
@@ -53,11 +69,15 @@ export async function syncAll() {
     // ── 1. PUSH unsynced local → cloud ───────────────────────────────────
     const unsyncedTodos = getTodoUnsynced()
     const unsyncedNotes = getNoteUnsynced()
+    
+    console.log(`[SyncService] Pushing ${unsyncedTodos.length} todos and ${unsyncedNotes.length} notes...`)
 
     await Promise.all([
       unsyncedTodos.length > 0 ? upsertTodos(user.id, unsyncedTodos) : Promise.resolve(),
       unsyncedNotes.length > 0 ? upsertNotes(user.id, unsyncedNotes) : Promise.resolve(),
     ])
+
+    console.log('[SyncService] Push successful. Pulling from cloud...')
 
     // ── 2. PULL cloud → local (delta) ────────────────────────────────────
     const since = lastSyncedAt ?? new Date(0).toISOString()
@@ -65,6 +85,8 @@ export async function syncAll() {
       fetchTodosSince(user.id, since),
       fetchNotesSince(user.id, since),
     ])
+    
+    console.log(`[SyncService] Pull successful. Fetched ${cloudTodos.length} todos and ${cloudNotes.length} notes.`)
 
     // ── 3. MERGE ─────────────────────────────────────────────────────────
     if (cloudTodos.length > 0) mergeTodos(cloudTodos)
@@ -89,6 +111,7 @@ export async function syncAll() {
     setSyncStatus(SYNC_STATUS.ERROR, err.message)
   } finally {
     isSyncInProgress = false
+    console.log('[SyncService] Sync sequence finished.')
   }
 }
 

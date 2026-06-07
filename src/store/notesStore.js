@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { STORAGE_KEYS } from '../utils/constants'
-import { generateId, normalizeLegacyId, nowISO } from '../utils/syncHelpers'
+import { generateId, normalizeLegacyId, nowISO, normalizeIso } from '../utils/syncHelpers'
 import { mergeRecords, pruneSyncedDeletes } from '../utils/mergeHelpers'
 
 const STORAGE_KEY = STORAGE_KEYS.NOTES
@@ -16,8 +16,8 @@ const normalizeNote = (n) => ({
   pinned:    n.pinned    ?? false,
   deleted:   n.deleted   ?? false,
   synced:    n.synced    ?? false,
-  createdAt: n.createdAt ?? nowISO(),
-  updatedAt: n.updatedAt ?? nowISO(),
+  createdAt: normalizeIso(n.createdAt),
+  updatedAt: normalizeIso(n.updatedAt),
 })
 
 async function persist(notes) {

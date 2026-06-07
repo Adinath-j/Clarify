@@ -8,8 +8,10 @@
  * Without env vars the app runs 100% offline — no errors thrown.
  */
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+import 'react-native-url-polyfill/auto'
+
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim()
+const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim()
 
 let supabase = null
 
@@ -23,6 +25,16 @@ if (SUPABASE_URL && SUPABASE_KEY) {
         detectSessionInUrl: false,
       },
     })
+    
+    const { AppState } = require('react-native')
+    AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        supabase.auth.startAutoRefresh()
+      } else {
+        supabase.auth.stopAutoRefresh()
+      }
+    })
+    
     console.log('[Supabase] Client initialised.')
   } catch (e) {
     console.warn('[Supabase] Could not create client:', e.message)

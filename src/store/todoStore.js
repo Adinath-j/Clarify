@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { STORAGE_KEYS } from '../utils/constants'
-import { generateId, normalizeLegacyId, nowISO } from '../utils/syncHelpers'
+import { generateId, normalizeLegacyId, nowISO, normalizeIso } from '../utils/syncHelpers'
 import { mergeRecords, pruneSyncedDeletes } from '../utils/mergeHelpers'
 
 const STORAGE_KEY = STORAGE_KEYS.TODOS
@@ -20,8 +20,8 @@ const normalizeTodo = (t) => ({
   dateKey:   t.dateKey    ?? todayKey(),
   deleted:   t.deleted    ?? false,
   synced:    t.synced     ?? false,
-  createdAt: t.createdAt  ?? nowISO(),
-  updatedAt: t.updatedAt  ?? nowISO(),
+  createdAt: normalizeIso(t.createdAt),
+  updatedAt: normalizeIso(t.updatedAt),
 })
 
 /** Persist the full todos array (including soft-deleted) to AsyncStorage. */
