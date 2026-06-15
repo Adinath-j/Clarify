@@ -68,3 +68,17 @@ export function normalizeIso(ts) {
   }
   return ts
 }
+
+/**
+ * Simple djb2 hash function for detecting text changes.
+ * Used to avoid regenerating embeddings for identical text.
+ * @param {string} str 
+ * @returns {number} Unsigned 32-bit integer hash
+ */
+export function hashText(str) {
+  let hash = 5381
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 33) ^ str.charCodeAt(i)
+  }
+  return hash >>> 0
+}

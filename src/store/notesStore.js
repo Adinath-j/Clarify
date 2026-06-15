@@ -16,6 +16,10 @@ const normalizeNote = (n) => ({
   pinned:    n.pinned    ?? false,
   deleted:   n.deleted   ?? false,
   synced:    n.synced    ?? false,
+  embedding: n.embedding ?? null,
+  embedding_text_hash: n.embedding_text_hash ?? null,
+  embedding_model: n.embedding_model ?? null,
+  embedding_updated_at: normalizeIso(n.embedding_updated_at),
   createdAt: normalizeIso(n.createdAt),
   updatedAt: normalizeIso(n.updatedAt),
 })
@@ -64,6 +68,7 @@ const useNotesStore = create((set, get) => ({
       const note  = normalizeNote({ id: generateId(), title: title.trim() || 'Untitled', body })
       const notes = [note, ...state.notes]
       persist(notes)
+      setTimeout(() => require('../services/syncService').triggerSync(), 50)
       return { notes }
     }),
 
@@ -76,6 +81,7 @@ const useNotesStore = create((set, get) => ({
           : n
       )
       persist(notes)
+      setTimeout(() => require('../services/syncService').triggerSync(), 50)
       return { notes }
     }),
 
@@ -86,6 +92,7 @@ const useNotesStore = create((set, get) => ({
         n.id === id ? { ...n, pinned: !n.pinned, updatedAt: nowISO(), synced: false } : n
       )
       persist(notes)
+      setTimeout(() => require('../services/syncService').triggerSync(), 50)
       return { notes }
     }),
 
@@ -98,6 +105,7 @@ const useNotesStore = create((set, get) => ({
           : n
       )
       persist(notes)
+      setTimeout(() => require('../services/syncService').triggerSync(), 50)
       return { notes }
     }),
 
@@ -110,6 +118,7 @@ const useNotesStore = create((set, get) => ({
           : n
       )
       persist(notes)
+      setTimeout(() => require('../services/syncService').triggerSync(), 50)
       return { notes }
     }),
 
@@ -128,12 +137,22 @@ const useNotesStore = create((set, get) => ({
       return { notes }
     }),
 
-  // ─── Sync: merge cloud records ────────────────────────────────────────────
+  // --- Sync: merge cloud records ---
   mergeFromCloud: (cloudRecords) =>
     set((state) => {
       const merged = mergeRecords(state.notes, cloudRecords.map(normalizeNote))
       persist(merged)
       return { notes: merged }
+    }),
+
+  // --- Silently update embedding ---
+  updateEmbedding: (id, embeddingData) => 
+    set((state) => {
+      const notes = state.notes.map(n => 
+        n.id === id ? { ...n, ...embeddingData } : n
+      )
+      persist(notes)
+      return { notes }
     }),
 
   // ─── Clear all ───────────────────────────────────────────────────────────

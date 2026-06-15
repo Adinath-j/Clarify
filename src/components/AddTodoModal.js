@@ -37,7 +37,7 @@ export default function AddTodoModal({
   return (
     <Modal transparent visible={visible} animationType="slide">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-        <Pressable style={styles.overlay} onPress={() => { if (!title.trim()) onClose() }} />
+        <Pressable style={[styles.overlay, { backgroundColor: colors.background + 'A0' }]} onPress={() => { if (!title.trim()) onClose() }} />
 
         <View style={[styles.sheet, { backgroundColor: colors.surface }]}>
           <View style={[styles.handle, { backgroundColor: colors.border }]} />
@@ -50,47 +50,49 @@ export default function AddTodoModal({
             value={title}
             onChangeText={setTitle}
             placeholder="What do you need to do?"
-            placeholderTextColor={colors.textMuted}
-            style={[styles.input, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.surfaceAlt }]}
+            placeholderTextColor={colors.textSecondary}
+            style={[styles.input, { borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.card }]}
             returnKeyType="done"
             onSubmitEditing={submit}
           />
 
-          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Priority</Text>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Priority</Text>
           <View style={styles.chipRow}>
-            {PRIORITIES.map(({ key, label, color }) => {
+            {PRIORITIES.map(({ key, label, colorToken }) => {
               const active = priority === key
+              const tokenColor = colors[colorToken] || colors.primary
               return (
                 <Pressable key={key} onPress={() => setPriority(key)} hitSlop={6}
                   style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.surface },
-                    active && { backgroundColor: color, borderColor: color, elevation: 3 }]}>
-                  <View style={[styles.dot, { backgroundColor: color }]} />
+                    active && { backgroundColor: tokenColor, borderColor: tokenColor, elevation: 3 }]}>
+                  <View style={[styles.dot, { backgroundColor: tokenColor }]} />
                   <Text style={[styles.chipText, { color: colors.textPrimary },
-                    active && styles.chipTextActive]}>{label}</Text>
+                    active && { color: colors.card, fontWeight: '700' }]}>{label}</Text>
                 </Pressable>
               )
             })}
           </View>
 
-          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>Category</Text>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Category</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-            {CATEGORIES.map(({ key, label, icon, color }) => {
+            {CATEGORIES.map(({ key, label, icon, colorToken }) => {
               const active = category === key
+              const tokenColor = colors[colorToken] || colors.primary
               return (
                 <Pressable key={key} onPress={() => setCategory(key)} hitSlop={6}
                   style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.surface },
-                    active && { backgroundColor: color, borderColor: color, elevation: 3 }]}>
+                    active && { backgroundColor: tokenColor, borderColor: tokenColor, elevation: 3 }]}>
                   <Text style={styles.catIcon}>{icon}</Text>
                   <Text style={[styles.chipText, { color: colors.textPrimary },
-                    active && styles.chipTextActive]}>{label}</Text>
+                    active && { color: colors.card, fontWeight: '700' }]}>{label}</Text>
                 </Pressable>
               )
             })}
           </ScrollView>
 
           <Pressable onPress={submit} disabled={!canSubmit}
-            style={[styles.submitButton, { backgroundColor: colors.accent }, !canSubmit && styles.submitDisabled]}>
-            <Text style={styles.submitText}>{initialTitle ? 'Update Task' : 'Add Task'}</Text>
+            style={[styles.submitButton, { backgroundColor: colors.primary }, !canSubmit && styles.submitDisabled]}>
+            <Text style={[styles.submitText, { color: colors.card }]}>{initialTitle ? 'Update Task' : 'Add Task'}</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -100,7 +102,7 @@ export default function AddTodoModal({
 
 const styles = StyleSheet.create({
   container:    { flex: 1, justifyContent: 'flex-end' },
-  overlay:      { ...StyleSheet.absoluteFillObject, backgroundColor: '#00000050' },
+  overlay:      { ...StyleSheet.absoluteFillObject },
   sheet:        { padding: 16, paddingBottom: 32, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
   handle:       { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
   heading:      { fontSize: 18, fontWeight: '700', marginBottom: 12 },
@@ -111,8 +113,7 @@ const styles = StyleSheet.create({
   dot:          { width: 8, height: 8, borderRadius: 4 },
   catIcon:      { fontSize: 13 },
   chipText:     { fontSize: 13, fontWeight: '500' },
-  chipTextActive:{ color: '#FFFFFF', fontWeight: '700' },
   submitButton: { marginTop: 18, paddingVertical: 13, borderRadius: 12, alignItems: 'center' },
   submitDisabled:{ opacity: 0.45 },
-  submitText:   { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  submitText:   { fontSize: 16, fontWeight: '700' },
 })

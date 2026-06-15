@@ -53,15 +53,13 @@ export default function TodosScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
   },
-  container: {
+  listContent: {
     flex: 1,
   },
 
   container: {
     flex: 1,
     padding: 12,
-    backgroundColor: '#F9FAFB',
   },
 })

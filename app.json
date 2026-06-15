@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "notes-todo-ai",
-    "scheme": "notes-todo",
-    "slug": "notes-todo-ai",
+    "name": "clarify",
+    "scheme": "clarify",
+    "slug": "clarify",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -22,7 +22,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.clarify"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -30,6 +31,12 @@
     "plugins": [
       "expo-router",
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "625513f5-d72b-4108-af29-c6d80a2a3c8f"
+      }
+    }
   }
 }

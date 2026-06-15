@@ -24,7 +24,7 @@ import useNotesStore   from '../store/notesStore'
 import useAuthStore    from '../store/authStore'
 import useNetworkStore from '../store/networkStore'
 import useUIStore      from '../store/uiStore'
-import { nowISO }      from '../utils/syncHelpers'
+import { nowISO, hashText } from '../utils/syncHelpers'
 import { SYNC_STATUS, SYNC_INTERVAL_MS } from '../utils/constants'
 
 let syncTimer        = null
@@ -66,9 +66,10 @@ export async function syncAll() {
   setSyncStatus(SYNC_STATUS.SYNCING)
 
   try {
+    let unsyncedTodos = getTodoUnsynced()
+    let unsyncedNotes = getNoteUnsynced()
+    
     // ── 1. PUSH unsynced local → cloud ───────────────────────────────────
-    const unsyncedTodos = getTodoUnsynced()
-    const unsyncedNotes = getNoteUnsynced()
     
     console.log(`[SyncService] Pushing ${unsyncedTodos.length} todos and ${unsyncedNotes.length} notes...`)
 

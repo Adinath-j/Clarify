@@ -10,12 +10,13 @@ import { debounce }  from '../utils/debounce'
 
 const SECTION_TODO = 'todo'
 const SECTION_NOTE = 'note'
-const PRIORITY_COLORS = { high: '#EF4444', medium: '#F59E0B', low: '#10B981' }
 
 export default function SearchScreen() {
   const { colors } = useTheme()
   const todos = useTodoStore((s) => s.todos)
   const notes = useNotesStore((s) => s.notes)
+
+  const PRIORITY_COLORS = { high: colors.error, medium: colors.warning, low: colors.success }
 
   const [query,   setQuery]   = useState('')
   const [results, setResults] = useState([])
@@ -53,7 +54,7 @@ export default function SearchScreen() {
 
   const renderItem = useCallback(({ item }) => {
     if (item._type === 'header') return (
-      <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>{item._label}</Text>
+      <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>{item._label}</Text>
     )
     if (item._type === SECTION_TODO) return (
       <View style={[styles.resultCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -62,7 +63,7 @@ export default function SearchScreen() {
           <Text style={[styles.resultTitle, { color: colors.textPrimary }, item.completed && styles.strikethrough]} numberOfLines={1}>
             {item.title}
           </Text>
-          <Text style={[styles.resultMeta, { color: colors.textMuted }]}>
+          <Text style={[styles.resultMeta, { color: colors.textSecondary }]}>
             {item.category} · {item.dateKey}{item.completed ? ' · Done' : ''}
           </Text>
         </View>
@@ -71,10 +72,10 @@ export default function SearchScreen() {
     )
     if (item._type === SECTION_NOTE) return (
       <View style={[styles.resultCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Ionicons name="document-text" size={18} color={colors.accent} style={styles.noteIcon} />
+        <Ionicons name="document-text" size={18} color={colors.primary} style={styles.noteIcon} />
         <View style={styles.resultContent}>
           <Text style={[styles.resultTitle, { color: colors.textPrimary }]} numberOfLines={1}>{item.title}</Text>
-          {item.body ? <Text style={[styles.resultMeta, { color: colors.textMuted }]} numberOfLines={1}>{item.body}</Text> : null}
+          {item.body ? <Text style={[styles.resultMeta, { color: colors.textSecondary }]} numberOfLines={1}>{item.body}</Text> : null}
         </View>
         {item.pinned && <Ionicons name="bookmark" size={14} color={colors.warning} />}
       </View>
@@ -90,13 +91,13 @@ export default function SearchScreen() {
       {/* Search bar */}
       <View style={styles.searchRow}>
         <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Ionicons name="search" size={18} color={colors.textMuted} style={styles.searchIcon} />
+          <Ionicons name="search" size={18} color={colors.textSecondary} style={styles.searchIcon} />
           <TextInput
             ref={inputRef}
             value={query}
             onChangeText={setQuery}
             placeholder="Search tasks and notes…"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={colors.textSecondary}
             style={[styles.searchInput, { color: colors.textPrimary }]}
             autoCorrect={false}
             clearButtonMode="while-editing"
@@ -104,7 +105,7 @@ export default function SearchScreen() {
           />
           {query.length > 0 && (
             <Pressable onPress={() => setQuery('')} hitSlop={8}>
-              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+              <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
             </Pressable>
           )}
         </View>
@@ -114,8 +115,8 @@ export default function SearchScreen() {
       {!isTyping && (
         <View style={styles.statsStrip}>
           {[
-            { icon: 'checkmark-circle', label: `${visibleTodos.length} tasks`,  color: colors.accent },
-            { icon: 'document-text',    label: `${visibleNotes.length} notes`,  color: '#6366F1' },
+            { icon: 'checkmark-circle', label: `${visibleTodos.length} tasks`,  color: colors.primary },
+            { icon: 'document-text',    label: `${visibleNotes.length} notes`,  color: colors.warning },
             { icon: 'checkmark-done',   label: `${visibleTodos.filter((t) => t.completed).length} done`, color: colors.success },
           ].map(({ icon, label, color }) => (
             <View key={label} style={[styles.statPill, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -131,7 +132,7 @@ export default function SearchScreen() {
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>🔍</Text>
             <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No results for "{query}"</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>Try a different keyword</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>Try a different keyword</Text>
           </View>
         ) : (
           <FlatList
@@ -146,7 +147,7 @@ export default function SearchScreen() {
       ) : (
         <View style={styles.promptState}>
           <Text style={styles.promptIcon}>✨</Text>
-          <Text style={[styles.promptText, { color: colors.textMuted }]}>
+          <Text style={[styles.promptText, { color: colors.textSecondary }]}>
             Start typing to search across all your tasks and notes
           </Text>
         </View>
@@ -165,7 +166,7 @@ const styles = StyleSheet.create({
   statPill:      { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, borderWidth: 1 },
   statLabel:     { fontSize: 12, fontWeight: '600' },
   sectionHeader: { fontSize: 11, fontWeight: '700', letterSpacing: 1.2, marginTop: 16, marginBottom: 8 },
-  listContent:   { paddingHorizontal: 16, paddingBottom: 120 },
+  listContent:   { paddingHorizontal: 16, paddingBottom: 180 },
   resultCard:    { flexDirection: 'row', alignItems: 'center', borderRadius: 12, padding: 13, marginBottom: 8, borderWidth: 1 },
   priorityDot:   { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
   noteIcon:      { marginRight: 10 },

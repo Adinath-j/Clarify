@@ -20,6 +20,7 @@ export default function FilterChips({ activeFilters, onToggle }) {
     >
       {FILTER_CHIPS.map((filter) => {
         const isActive = activeFilters.includes(filter.key)
+        const tokenColor = colors[filter.colorToken] || colors.primary
         return (
           <Pressable
             key={filter.key}
@@ -28,12 +29,12 @@ export default function FilterChips({ activeFilters, onToggle }) {
             style={({ pressed }) => [
               styles.chip,
               { backgroundColor: colors.surface, borderColor: colors.border },
-              isActive && { backgroundColor: filter.color, borderColor: filter.color, elevation: 3 },
+              isActive && { backgroundColor: tokenColor, borderColor: tokenColor, elevation: 3 },
               pressed && styles.pressed,
             ]}
           >
-            <View style={[styles.dot, { backgroundColor: isActive ? '#FFFFFF80' : filter.color }]} />
-            <Text style={[styles.text, { color: colors.textPrimary }, isActive && styles.textActive]}>
+            <View style={[styles.dot, { backgroundColor: isActive ? colors.surface : tokenColor }]} />
+            <Text style={[styles.text, { color: colors.textPrimary }, isActive && { color: colors.card, fontWeight: '700' }]}>
               {filter.label}
             </Text>
           </Pressable>
@@ -50,5 +51,4 @@ const styles = StyleSheet.create({
   pressed:    { opacity: 0.7 },
   dot:        { width: 7, height: 7, borderRadius: 4 },
   text:       { fontSize: 13, fontWeight: '500' },
-  textActive: { color: '#FFFFFF', fontWeight: '700' },
 })

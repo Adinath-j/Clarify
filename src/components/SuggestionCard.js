@@ -1,22 +1,25 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native'
+import useTheme from '../hooks/useTheme'
 
 export default function SuggestionCard() {
+  const { colors } = useTheme()
+
   return (
-    <View style={styles.card}>
-      <View style={styles.icon} />
+    <View style={[styles.card, { backgroundColor: colors.card }]}>
+      <View style={[styles.icon, { backgroundColor: colors.surface }]} />
 
       <View style={styles.content}>
-        <Text style={styles.title}>Suggestion</Text>
-        <Text style={styles.text}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Suggestion</Text>
+        <Text style={[styles.text, { color: colors.textSecondary }]}>
           You have 3 overdue tasks from yesterday.
         </Text>
 
         <View style={styles.actions}>
           <Pressable>
-            <Text style={styles.primary}>Review now</Text>
+            <Text style={[styles.primary, { color: colors.primary }]}>Review now</Text>
           </Pressable>
           <Pressable>
-            <Text style={styles.secondary}>Dismiss</Text>
+            <Text style={[styles.secondary, { color: colors.textSecondary }]}>Dismiss</Text>
           </Pressable>
         </View>
       </View>
@@ -27,7 +30,6 @@ export default function SuggestionCard() {
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -36,7 +38,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2563EB20',
     marginRight: 12,
   },
   content: {
@@ -45,23 +46,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
   },
   text: {
     marginTop: 4,
     fontSize: 14,
-    color: '#6B7280',
   },
   actions: {
     flexDirection: 'row',
     marginTop: 12,
   },
   primary: {
-    color: '#2563EB',
     fontWeight: '600',
     marginRight: 16,
   },
   secondary: {
-    color: '#9CA3AF',
   },
 })

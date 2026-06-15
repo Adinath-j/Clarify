@@ -17,9 +17,13 @@ const normalizeTodo = (t) => ({
   completed: t.completed  ?? false,
   priority:  t.priority   ?? 'medium',
   category:  t.category   ?? 'General',
-  dateKey:   t.dateKey    ?? todayKey(),
   deleted:   t.deleted    ?? false,
   synced:    t.synced     ?? false,
+  dateKey:   t.dateKey    ?? '',
+  embedding: t.embedding ?? null,
+  embedding_text_hash: t.embedding_text_hash ?? null,
+  embedding_model: t.embedding_model ?? null,
+  embedding_updated_at: normalizeIso(t.embedding_updated_at),
   createdAt: normalizeIso(t.createdAt),
   updatedAt: normalizeIso(t.updatedAt),
 })
@@ -67,6 +71,7 @@ const useTodoStore = create((set, get) => ({
       const todo  = normalizeTodo({ id: generateId(), title, priority, category, dateKey })
       const todos = [todo, ...state.todos]
       persist(todos)
+      setTimeout(() => require('../services/syncService').triggerSync(), 50)
       return { todos }
     }),
 
@@ -79,6 +84,7 @@ const useTodoStore = create((set, get) => ({
           : t
       )
       persist(todos)
+      setTimeout(() => require('../services/syncService').triggerSync(), 50)
       return { todos }
     }),
 
@@ -91,6 +97,7 @@ const useTodoStore = create((set, get) => ({
           : t
       )
       persist(todos)
+      setTimeout(() => require('../services/syncService').triggerSync(), 50)
       return { todos }
     }),
 
@@ -103,6 +110,7 @@ const useTodoStore = create((set, get) => ({
           : t
       )
       persist(todos)
+      setTimeout(() => require('../services/syncService').triggerSync(), 50)
       return { todos }
     }),
 
@@ -132,6 +140,16 @@ const useTodoStore = create((set, get) => ({
       const merged = mergeRecords(state.todos, cloudRecords.map(normalizeTodo))
       persist(merged)
       return { todos: merged }
+    }),
+
+  // --- Silently update embedding ---
+  updateEmbedding: (id, embeddingData) => 
+    set((state) => {
+      const todos = state.todos.map(t => 
+        t.id === id ? { ...t, ...embeddingData } : t
+      )
+      persist(todos)
+      return { todos }
     }),
 
   // ─── Clear all ───────────────────────────────────────────────────────────

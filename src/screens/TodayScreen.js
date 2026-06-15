@@ -8,17 +8,18 @@ import useTodoStore from '../store/todoStore'
 import useTheme     from '../hooks/useTheme'
 import TodoItem     from '../components/TodoItem'
 import TodoSkeleton from '../components/TodoSkeleton'
-import FloatingActionButton from '../components/FloatingActionButton'
+
 import AddTodoModal  from '../components/AddTodoModal'
 import FilterChips   from '../components/FilterChips'
 import DayHeader     from '../components/DayHeader'
-import UndoSnackbar  from '../components/UndoSnackbar'
 import { getDateKey } from '../utils/date'
+import useUIStore from '../store/uiStore'
 
 const ITEM_HEIGHT = 64
 
 export default function TodayScreen() {
   const { colors } = useTheme()
+  const { isAddTodoOpen, closeAddTodo } = useUIStore()
 
   const {
     todos,
@@ -26,24 +27,21 @@ export default function TodayScreen() {
     hydrate,
     addTodo,
     deleteTodo,
-    undoDeleteTodo,
     reorderTodos,
     persistTodos,
   } = useTodoStore()
 
+  const { addPendingDeletion } = useUIStore()
+
   const [open, setOpen]                   = useState(false)
   const [activeFilters, setActiveFilters] = useState([])
-  const [showUndo, setShowUndo]           = useState(false)
   const [selectedDate, setSelectedDate]   = useState(new Date())
 
   const dateKey        = getDateKey(selectedDate)
-  const lastDeletedRef = useRef(null)
-  const undoTimerRef   = useRef(null)
   const dragEnabled    = activeFilters.length === 0
 
   useEffect(() => {
     hydrate()
-    return () => { if (undoTimerRef.current) clearTimeout(undoTimerRef.current) }
   }, [])
 
   // ─── Filter logic (exclude soft-deleted) ──────────────────────────────
@@ -64,26 +62,10 @@ export default function TodayScreen() {
     )
   }
 
-  // ─── Soft-delete + undo ───────────────────────────────────────────────
+  // ─── Soft-delete ────────────────────────────────────────────────────────
   function handleDelete(todo) {
-    lastDeletedRef.current = todo.id
     deleteTodo(todo.id) // soft delete — sets deleted: true
-    setShowUndo(true)
-
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
-    undoTimerRef.current = setTimeout(() => {
-      setShowUndo(false)
-      lastDeletedRef.current = null
-    }, 3000)
-  }
-
-  function handleUndo() {
-    if (!lastDeletedRef.current) return
-    Haptics.selectionAsync()
-    undoDeleteTodo(lastDeletedRef.current) // restores deleted: false
-    lastDeletedRef.current = null
-    setShowUndo(false)
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
+    addPendingDeletion(todo.id, 'todo')
   }
 
   // ─── Render item ──────────────────────────────────────────────────────
@@ -156,17 +138,18 @@ export default function TodayScreen() {
           />
         )}
 
-        <FloatingActionButton onPress={() => setOpen(true)} />
+
         <AddTodoModal
-          visible={open}
-          onClose={() => setOpen(false)}
+          visible={open || isAddTodoOpen}
+          onClose={() => {
+            setOpen(false)
+            closeAddTodo()
+          }}
           onSubmit={(title, priority, category) =>
             addTodo({ title, priority, category: category ?? 'General', dateKey })
           }
         />
       </View>
-
-      <UndoSnackbar visible={showUndo} onUndo={handleUndo} />
     </SafeAreaView>
   )
 }
@@ -174,7 +157,7 @@ export default function TodayScreen() {
 const styles = StyleSheet.create({
   safe:      { flex: 1 },
   container: { flex: 1 },
-  completedSection: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 120 },
+  completedSection: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 180 },
   completedTitle:   { fontSize: 11, fontWeight: '700', marginBottom: 10, letterSpacing: 1.2 },
   emptyState:  { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 80 },
   emptyIcon:   { fontSize: 52, marginBottom: 16 },

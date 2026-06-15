@@ -7,7 +7,7 @@ import useNotesStore from '../store/notesStore'
 import useTheme from '../hooks/useTheme'
 
 function NoteItem({ note, onPress }) {
-  const { colors } = useTheme()
+  const { colors, layout, typography } = useTheme()
   const togglePin  = useNotesStore((s) => s.togglePin)
   const deleteNote = useNotesStore((s) => s.deleteNote)
   const swipeRef   = useRef(null)
@@ -15,9 +15,9 @@ function NoteItem({ note, onPress }) {
   const renderRightActions = (_, dragX) => {
     const scale = dragX.interpolate({ inputRange: [-100, -50, 0], outputRange: [1, 0.85, 0.6], extrapolate: 'clamp' })
     return (
-      <View style={styles.deleteBack}>
+      <View style={[styles.deleteBack, { backgroundColor: colors.error }]}>
         <Animated.View style={{ transform: [{ scale }] }}>
-          <MaterialIcons name="delete" size={24} color="#fff" />
+          <MaterialIcons name="delete" size={24} color={colors.card} />
         </Animated.View>
       </View>
     )
@@ -26,9 +26,9 @@ function NoteItem({ note, onPress }) {
   const renderLeftActions = (_, dragX) => {
     const scale = dragX.interpolate({ inputRange: [0, 50, 100], outputRange: [0.6, 0.85, 1], extrapolate: 'clamp' })
     return (
-      <View style={styles.pinBack}>
+      <View style={[styles.pinBack, { backgroundColor: colors.warning }]}>
         <Animated.View style={{ transform: [{ scale }] }}>
-          <Ionicons name={note.pinned ? 'bookmark' : 'bookmark-outline'} size={24} color="#fff" />
+          <Ionicons name={note.pinned ? 'bookmark' : 'bookmark-outline'} size={24} color={colors.card} />
         </Animated.View>
       </View>
     )
@@ -46,15 +46,18 @@ function NoteItem({ note, onPress }) {
       overshootRight={false}
       overshootLeft={false}
       friction={2}
-      onSwipeableWillOpen={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
       onSwipeableOpen={(dir) => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
-        if (dir === 'right') deleteNote(note.id)
-        else { togglePin(note.id); swipeRef.current?.close() }
+        if (dir === 'right') {
+          deleteNote(note.id)
+          require('../store/uiStore').default.getState().addPendingDeletion(note.id, 'note')
+        } else { 
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+          togglePin(note.id); swipeRef.current?.close() 
+        }
       }}
     >
       <Pressable
-        style={[styles.card, { backgroundColor: colors.surface },
+        style={[styles.card, { backgroundColor: colors.surface, borderRadius: layout.radius.lg, padding: layout.spacing.md, marginBottom: layout.spacing.sm },
           note.pinned && { borderLeftWidth: 3, borderLeftColor: colors.warning }]}
         onPress={() => onPress?.(note)}
       >
@@ -64,15 +67,15 @@ function NoteItem({ note, onPress }) {
           </View>
         )}
         <View style={styles.cardHeader}>
-          <Text style={[styles.cardTitle, { color: colors.textPrimary }]} numberOfLines={1}>
+          <Text style={[typography.bodyL, { color: colors.textPrimary, flex: 1, fontWeight: '600' }]} numberOfLines={1}>
             {note.title}
           </Text>
-          <Text style={[styles.timeText, { color: colors.textMuted }]}>{timeLabel}</Text>
+          <Text style={[typography.caption, { color: colors.textSecondary, marginLeft: layout.spacing.sm }]}>{timeLabel}</Text>
         </View>
         {note.body ? (
-          <Text style={[styles.preview, { color: colors.textSecondary }]} numberOfLines={2}>{note.body}</Text>
+          <Text style={[typography.bodyM, { color: colors.textSecondary }]} numberOfLines={2}>{note.body}</Text>
         ) : (
-          <Text style={[styles.emptyBody, { color: colors.border }]}>No content</Text>
+          <Text style={[typography.bodyM, { color: colors.border, fontStyle: 'italic' }]}>No content</Text>
         )}
       </Pressable>
     </Swipeable>
@@ -98,13 +101,13 @@ function formatTime(ts) {
 }
 
 const styles = StyleSheet.create({
-  card:       { borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  card:       { borderRadius: 14, padding: 14, marginBottom: 10, elevation: 2 },
   pinBadge:   { position: 'absolute', top: 10, right: 10 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, paddingRight: 20 },
   cardTitle:  { flex: 1, fontSize: 15, fontWeight: '600' },
   timeText:   { fontSize: 11, marginLeft: 8 },
   preview:    { fontSize: 13, lineHeight: 19 },
   emptyBody:  { fontSize: 13, fontStyle: 'italic' },
-  deleteBack: { backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'flex-end', paddingHorizontal: 22, borderRadius: 14, marginBottom: 10, flex: 1 },
-  pinBack:    { backgroundColor: '#F59E0B', justifyContent: 'center', alignItems: 'flex-start', paddingHorizontal: 22, borderRadius: 14, marginBottom: 10, flex: 1 },
+  deleteBack: { justifyContent: 'center', alignItems: 'flex-end', paddingHorizontal: 22, borderRadius: 14, marginBottom: 10, flex: 1 },
+  pinBack:    { justifyContent: 'center', alignItems: 'flex-start', paddingHorizontal: 22, borderRadius: 14, marginBottom: 10, flex: 1 },
 })

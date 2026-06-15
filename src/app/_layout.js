@@ -1,6 +1,6 @@
 import 'react-native-get-random-values'
 import 'react-native-url-polyfill/auto'
-import { View } from 'react-native'
+import { View, Platform } from 'react-native'
 import { Tabs, useRouter, useSegments, useRootNavigationState } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -8,16 +8,23 @@ import { Ionicons } from '@expo/vector-icons'
 import { useEffect } from 'react'
 import AppShell from '../AppShell'
 import SyncStatusBar from '../components/SyncStatusBar'
+import UndoSnackbar from '../components/UndoSnackbar'
 import useTheme from '../hooks/useTheme'
+import useAnimatedTheme from '../hooks/useAnimatedTheme'
 import useAuthStore from '../store/authStore'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Animated from 'react-native-reanimated'
 
 export default function Layout() {
   const theme = useTheme()
+  const { animatedStyles } = useAnimatedTheme()
   const { colors } = theme
   const { isLoggedIn, isLoading } = useAuthStore()
   const segments = useSegments()
   const router = useRouter()
   const rootNavigationState = useRootNavigationState()
+  const insets = useSafeAreaInsets()
+  const bottomPadding = Math.max(insets.bottom, 12)
 
   useEffect(() => {
     if (!rootNavigationState?.key) return
@@ -36,27 +43,39 @@ export default function Layout() {
   // Removed early return so Tabs mount on first render
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
-      <AppShell />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Animated.View style={[{ flex: 1 }, animatedStyles.bgBackground]}>
+        <AppShell />
 
       {/* Dynamic status bar for dark/light mode */}
-      <StatusBar style={colors.statusBarStyle === 'dark-content' ? 'dark' : 'light'} />
+      <StatusBar style={theme.dark ? 'light' : 'dark'} />
 
       {/* Slim sync/offline indicator — sits just below the safe area */}
       <SyncStatusBar />
 
+      {/* Global Undo Snackbar */}
+      <UndoSnackbar />
+
       <Tabs
+        sceneContainerStyle={{ backgroundColor: 'transparent' }}
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: colors.tabActive,
-          tabBarInactiveTintColor: colors.tabInactive,
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textSecondary,
           tabBarStyle: {
-            backgroundColor: colors.tabBar,
-            borderTopColor: colors.tabBarBorder,
-            borderTopWidth: 1,
-            height: 64,
-            paddingBottom: 8,
-            paddingTop: 8,
+            position: 'absolute',
+            backgroundColor: colors.card,
+            borderTopWidth: 0,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            height: 60 + bottomPadding,
+            paddingBottom: bottomPadding,
+            paddingTop: 12,
+            elevation: 12,
+            shadowColor: '#000',
+            shadowOpacity: theme.dark ? 0.3 : 0.1,
+            shadowRadius: 16,
+            shadowOffset: { width: 0, height: -4 },
           },
           tabBarLabelStyle: {
             fontSize: 12,
@@ -67,9 +86,19 @@ export default function Layout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Today',
+            title: 'Home',
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="checkmark-circle" size={size} color={color} />
+              <Ionicons name="home" size={size} color={color} />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="inbox"
+          options={{
+            title: 'Inbox',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="albums" size={size} color={color} />
             ),
           }}
         />
@@ -85,32 +114,28 @@ export default function Layout() {
         />
 
         <Tabs.Screen
-          name="insights"
-          options={{
-            title: 'Insights',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="analytics" size={size} color={color} />
-            ),
-          }}
-        />
-
-        <Tabs.Screen
-          name="search"
-          options={{
-            title: 'Search',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="search" size={size} color={color} />
-            ),
-          }}
-        />
-        
-        <Tabs.Screen
           name="profile"
           options={{
             title: 'Profile',
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="person" size={size} color={color} />
             ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="insights"
+          options={{
+            href: null,
+            tabBarStyle: { display: 'none' },
+          }}
+        />
+
+        <Tabs.Screen
+          name="search"
+          options={{
+            href: null,
+            tabBarStyle: { display: 'none' },
           }}
         />
         
@@ -149,7 +174,15 @@ export default function Layout() {
             tabBarStyle: { display: 'none' },
           }}
         />
+        <Tabs.Screen
+          name="(ai)"
+          options={{
+            href: null,
+            tabBarStyle: { display: 'none' },
+          }}
+        />
       </Tabs>
+      </Animated.View>
     </GestureHandlerRootView>
   )
 }

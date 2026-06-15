@@ -18,8 +18,11 @@ let supabase = null
 if (SUPABASE_URL && SUPABASE_KEY) {
   try {
     const { createClient } = require('@supabase/supabase-js')
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default
+    
     supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: {
+        storage: AsyncStorage,
         persistSession:    true,
         autoRefreshToken:  true,
         detectSessionInUrl: false,

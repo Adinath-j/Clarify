@@ -7,6 +7,53 @@ const useUIStore = create((set) => ({
   loading: false,
   setLoading: (value) => set({ loading: value }),
 
+  // ─── Quick Capture ────────────────────────────────────────────────────
+  isQuickCaptureOpen: false,
+  openQuickCapture: () => set({ isQuickCaptureOpen: true }),
+  closeQuickCapture: () => set({ isQuickCaptureOpen: false }),
+
+  // ─── Global Creation Modals ──────────────────────────────────────────
+  isAddTodoOpen: false,
+  openAddTodo: () => set({ isAddTodoOpen: true }),
+  closeAddTodo: () => set({ isAddTodoOpen: false }),
+
+  isAddNoteOpen: false,
+  openAddNote: () => set({ isAddNoteOpen: true }),
+  closeAddNote: () => set({ isAddNoteOpen: false }),
+
+  // ─── Walkthrough ──────────────────────────────────────────────────────
+  hasSeenWalkthrough: false,
+  setHasSeenWalkthrough: async (value) => {
+    set({ hasSeenWalkthrough: value })
+    try {
+      await AsyncStorage.setItem('hasSeenWalkthrough', value.toString())
+    } catch {}
+  },
+  hydrateWalkthrough: async () => {
+    try {
+      const stored = await AsyncStorage.getItem('hasSeenWalkthrough')
+      if (stored !== null) {
+        set({ hasSeenWalkthrough: stored === 'true' })
+      }
+    } catch {}
+  },
+
+  hasSeenSwipeTutorial: false,
+  setHasSeenSwipeTutorial: async (value) => {
+    set({ hasSeenSwipeTutorial: value })
+    try {
+      await AsyncStorage.setItem('hasSeenSwipeTutorial', value.toString())
+    } catch {}
+  },
+  hydrateSwipeTutorial: async () => {
+    try {
+      const stored = await AsyncStorage.getItem('hasSeenSwipeTutorial')
+      if (stored !== null) {
+        set({ hasSeenSwipeTutorial: stored === 'true' })
+      }
+    } catch {}
+  },
+
   // ─── Theme ────────────────────────────────────────────────────────────
   /** 'light' | 'dark' | 'system' */
   themeMode: THEME_MODES.SYSTEM,
@@ -43,6 +90,13 @@ const useUIStore = create((set) => ({
 
   setLastSynced: (isoString) =>
     set({ lastSyncedAt: isoString }),
+
+  // ─── Undo Batching ──────────────────────────────────────────────────────
+  pendingDeletions: [], // [{ id, type: 'todo' | 'note' }]
+  addPendingDeletion: (id, type) => set((state) => ({ 
+    pendingDeletions: [...state.pendingDeletions, { id, type }] 
+  })),
+  clearPendingDeletions: () => set({ pendingDeletions: [] }),
 }))
 
 export default useUIStore

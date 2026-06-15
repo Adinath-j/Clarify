@@ -63,9 +63,9 @@ export default function ForgotPasswordScreen() {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.card} />
           ) : (
-            <Text style={styles.primaryButtonText}>Send Reset Link</Text>
+            <Text style={[styles.primaryButtonText, { color: colors.card }]}>Send Reset Link</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -83,5 +83,5 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '600' },
   input: { borderWidth: 1, borderRadius: 12, padding: 16, fontSize: 16 },
   primaryButton: { padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 16 },
-  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  primaryButtonText: { fontSize: 16, fontWeight: '600' },
 })

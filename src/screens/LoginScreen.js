@@ -6,17 +6,26 @@ import useTheme from '../hooks/useTheme'
 import { Ionicons } from '@expo/vector-icons'
 import * as WebBrowser from 'expo-web-browser'
 import * as Linking from 'expo-linking'
+import { makeRedirectUri } from "expo-auth-session";
+import * as QueryParams from "expo-auth-session/build/QueryParams";
 
 WebBrowser.maybeCompleteAuthSession()
 
 export default function LoginScreen() {
   const { colors } = useTheme()
   const router = useRouter()
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  React.useEffect(() => {
+    WebBrowser.warmUpAsync();
+
+    return () => {
+      WebBrowser.coolDownAsync();
+    };
+  }, []);
 
   const handleEmailLogin = async () => {
     if (!email || !password) {
@@ -38,8 +47,9 @@ export default function LoginScreen() {
 
   const handleOAuthLogin = async (provider) => {
     try {
-      const redirectUri = Linking.createURL('/')
-      console.log('My Redirect URI is:', redirectUri)
+      const redirectUri = makeRedirectUri()
+      console.log('Using Redirect URI:', redirectUri)
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -47,40 +57,23 @@ export default function LoginScreen() {
           skipBrowserRedirect: true,
         }
       })
+      
       if (error) throw error
-
-      console.log('Supabase Generated URL:', data?.url)
 
       if (data?.url) {
         const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUri)
+        
         if (res.type === 'success') {
-          const { url } = res
-          const parsed = Linking.parse(url)
-          let params = parsed.queryParams || {}
-          
-          if (!params.access_token && url.includes('#')) {
-            const fragment = url.split('#')[1]
-            fragment.split('&').forEach(pair => {
-              const [key, value] = pair.split('=')
-              params[key] = decodeURIComponent(value)
-            })
-          }
+          const { params, errorCode } = QueryParams.getQueryParams(res.url)
 
-          if (params.errorCode || params.error) {
-            throw new Error(params.errorCode || params.error_description || params.error)
-          }
+          if (errorCode) throw new Error(errorCode)
 
-          // If implicit flow returned access_token
           if (params.access_token && params.refresh_token) {
             await supabase.auth.setSession({
               access_token: params.access_token,
               refresh_token: params.refresh_token,
             })
-            const { data } = await supabase.auth.getSession()
-            console.log("SESSION:", data.session)
           } else if (params.code) {
-            // If PKCE flow returned a code, we'd exchange it but detectSessionInUrl usually handles this.
-            // But since we disabled detectSessionInUrl, we exchange code for session manually:
             await supabase.auth.exchangeCodeForSession(params.code)
           }
         }
@@ -93,17 +86,17 @@ export default function LoginScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Ionicons name="arrow-back" size={24} color={colors.text} />
+        <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
       </TouchableOpacity>
 
-      <Text style={[styles.title, { color: colors.text }]}>Welcome back</Text>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>Welcome back</Text>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Sign in to continue to Clarify.</Text>
 
       <View style={styles.form}>
         <View style={styles.inputContainer}>
-          <Text style={[styles.label, { color: colors.text }]}>Email Address</Text>
+          <Text style={[styles.label, { color: colors.textPrimary }]}>Email Address</Text>
           <TextInput
-            style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+            style={[styles.input, { borderColor: colors.border, color: colors.textPrimary }]}
             placeholder="you@example.com"
             placeholderTextColor={colors.textSecondary}
             keyboardType="email-address"
@@ -114,10 +107,10 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+          <Text style={[styles.label, { color: colors.textPrimary }]}>Password</Text>
           <View style={styles.passwordWrapper}>
             <TextInput
-              style={[styles.input, { borderColor: colors.border, color: colors.text, flex: 1 }]}
+              style={[styles.input, { borderColor: colors.border, color: colors.textPrimary, flex: 1 }]}
               placeholder="••••••••"
               placeholderTextColor={colors.textSecondary}
               secureTextEntry={!showPassword}
@@ -146,7 +139,7 @@ export default function LoginScreen() {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.card} />
           ) : (
             <Text style={styles.primaryButtonText}>Sign In</Text>
           )}
@@ -164,16 +157,16 @@ export default function LoginScreen() {
           style={[styles.socialButton, { borderColor: colors.border }]}
           onPress={() => handleOAuthLogin('google')}
         >
-          <Ionicons name="logo-google" size={20} color={colors.text} />
-          <Text style={[styles.socialButtonText, { color: colors.text }]}>Google</Text>
+          <Ionicons name="logo-google" size={20} color={colors.textPrimary} />
+          <Text style={[styles.socialButtonText, { color: colors.textPrimary }]}>Google</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.socialButton, { borderColor: colors.border }]}
           onPress={() => handleOAuthLogin('github')}
         >
-          <Ionicons name="logo-github" size={20} color={colors.text} />
-          <Text style={[styles.socialButtonText, { color: colors.text }]}>GitHub</Text>
+          <Ionicons name="logo-github" size={20} color={colors.textPrimary} />
+          <Text style={[styles.socialButtonText, { color: colors.textPrimary }]}>GitHub</Text>
         </TouchableOpacity>
       </View>
 
@@ -201,7 +194,7 @@ const styles = StyleSheet.create({
   forgotPassword: { alignSelf: 'flex-end' },
   forgotPasswordText: { fontSize: 14, fontWeight: '600' },
   primaryButton: { padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 8 },
-  primaryButtonText: { color: '#000', fontSize: 16, fontWeight: '600' },
+  primaryButtonText: { fontSize: 16, fontWeight: '600' },
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 32, gap: 16 },
   line: { flex: 1, height: 1 },
   orText: { fontSize: 14, fontWeight: '500' },

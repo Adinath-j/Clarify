@@ -4,11 +4,15 @@ import {
 } from 'react-native'
 import { useRef, useState, useEffect, useCallback } from 'react'
 import useTheme from '../hooks/useTheme'
+import { Ionicons } from '@expo/vector-icons'
+import * as Haptics from 'expo-haptics'
+import { runAITool } from '../services/aiService'
 
 export default function AddNoteModal({ visible, onClose, onSubmit, initialTitle, initialBody }) {
   const { colors } = useTheme()
   const [title, setTitle] = useState('')
   const [body, setBody]   = useState('')
+  const [isAILoading, setIsAILoading] = useState(false)
   const titleRef = useRef(null)
 
   useEffect(() => {
@@ -33,21 +37,55 @@ export default function AddNoteModal({ visible, onClose, onSubmit, initialTitle,
   return (
     <Modal transparent visible={visible} animationType="slide">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-        <Pressable style={styles.overlay} onPress={() => { if (!title.trim() && !body.trim()) onClose() }} />
+        <Pressable style={[styles.overlay, { backgroundColor: colors.background + 'A0' }]} onPress={() => { if (!title.trim() && !body.trim()) onClose() }} />
 
         <View style={[styles.sheet, { backgroundColor: colors.surface }]}>
           <View style={[styles.handle, { backgroundColor: colors.border }]} />
-          <Text style={[styles.heading, { color: colors.textPrimary }]}>
-            {initialTitle ? 'Edit note' : 'New note'}
-          </Text>
+          
+          <View style={styles.headerRow}>
+            <Text style={[styles.heading, { color: colors.textPrimary }]}>
+              {initialTitle ? 'Edit note' : 'New note'}
+            </Text>
+            
+            <View style={styles.headerActions}>
+              <Pressable 
+                style={[styles.aiBtn, { backgroundColor: isAILoading ? colors.surfaceContainer : colors.primary + '15' }]}
+                onPress={async () => {
+                  if (isAILoading || !body.trim()) return
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                  setIsAILoading(true)
+                  try {
+                    // Summarize or Generate Title based on state
+                    if (!title.trim() && body.trim()) {
+                      const res = await runAITool({ tool: 'title', prompt: body })
+                      if (res?.title) setTitle(res.title)
+                    } else {
+                      const res = await runAITool({ tool: 'summarize', prompt: body })
+                      if (res?.summary) setBody(prev => prev + '\n\n---\n**AI Summary:**\n' + res.summary)
+                    }
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                  } catch (err) {
+                    console.warn(err)
+                  } finally {
+                    setIsAILoading(false)
+                  }
+                }}
+              >
+                <Ionicons name="sparkles" size={16} color={colors.primary} />
+                <Text style={[styles.aiBtnText, { color: colors.primary }]}>
+                  {isAILoading ? 'Thinking...' : (!title.trim() && body.trim() ? 'Generate Title' : 'AI ✨')}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
 
           <TextInput
             ref={titleRef}
             value={title}
             onChangeText={setTitle}
             placeholder="Title"
-            placeholderTextColor={colors.textMuted}
-            style={[styles.titleInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.surfaceAlt }]}
+            placeholderTextColor={colors.textSecondary}
+            style={[styles.titleInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.card }]}
             returnKeyType="next"
           />
 
@@ -55,8 +93,8 @@ export default function AddNoteModal({ visible, onClose, onSubmit, initialTitle,
             value={body}
             onChangeText={setBody}
             placeholder="Add note content…"
-            placeholderTextColor={colors.textMuted}
-            style={[styles.bodyInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.surfaceAlt }]}
+            placeholderTextColor={colors.textSecondary}
+            style={[styles.bodyInput, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.card }]}
             multiline
             textAlignVertical="top"
             scrollEnabled={false}
@@ -67,8 +105,8 @@ export default function AddNoteModal({ visible, onClose, onSubmit, initialTitle,
               <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
             </Pressable>
             <Pressable onPress={submit} disabled={!canSubmit}
-              style={[styles.submitButton, { backgroundColor: colors.accent }, !canSubmit && styles.submitDisabled]}>
-              <Text style={styles.submitText}>{initialTitle ? 'Save changes' : 'Add Note'}</Text>
+              style={[styles.submitButton, { backgroundColor: colors.primary }, !canSubmit && styles.submitDisabled]}>
+              <Text style={[styles.submitText, { color: colors.card }]}>{initialTitle ? 'Save changes' : 'Add Note'}</Text>
             </Pressable>
           </View>
         </View>
@@ -79,10 +117,14 @@ export default function AddNoteModal({ visible, onClose, onSubmit, initialTitle,
 
 const styles = StyleSheet.create({
   container:    { flex: 1, justifyContent: 'flex-end' },
-  overlay:      { ...StyleSheet.absoluteFillObject, backgroundColor: '#00000050' },
+  overlay:      { ...StyleSheet.absoluteFillObject },
   sheet:        { paddingHorizontal: 16, paddingBottom: 32, paddingTop: 12, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
   handle:       { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
-  heading:      { fontSize: 18, fontWeight: '700', marginBottom: 14 },
+  headerRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  heading:      { fontSize: 18, fontWeight: '700' },
+  headerActions:{ flexDirection: 'row', gap: 8 },
+  aiBtn:        { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
+  aiBtnText:    { fontSize: 13, fontWeight: '600' },
   titleInput:   { fontSize: 16, fontWeight: '600', borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 10 },
   bodyInput:    { fontSize: 15, borderWidth: 1, borderRadius: 12, padding: 12, minHeight: 100, marginBottom: 16 },
   footer:       { flexDirection: 'row', gap: 10 },
@@ -90,5 +132,5 @@ const styles = StyleSheet.create({
   cancelText:   { fontWeight: '600', fontSize: 15 },
   submitButton: { flex: 2, paddingVertical: 13, borderRadius: 12, alignItems: 'center' },
   submitDisabled:{ opacity: 0.45 },
-  submitText:   { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
+  submitText:   { fontWeight: '700', fontSize: 15 },
 })

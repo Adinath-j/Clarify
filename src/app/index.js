@@ -1,5 +1,5 @@
-import TodayScreen from '../screens/TodayScreen'
+import DashboardScreen from '../screens/DashboardScreen'
 
 export default function Index() {
-  return <TodayScreen />
+  return <DashboardScreen />
 }

@@ -1,22 +1,24 @@
-import { View, Text, StyleSheet, SectionList } from 'react-native'
+import { View, Text, StyleSheet, SectionList, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useState, useCallback } from 'react'
 import * as Haptics from 'expo-haptics'
+import { Ionicons } from '@expo/vector-icons'
 
 import useNotesStore from '../store/notesStore'
 import useTheme      from '../hooks/useTheme'
 import NoteItem      from '../components/NoteItem'
 import NoteSkeleton  from '../components/NoteSkeleton'
-import FloatingActionButton from '../components/FloatingActionButton'
+
 import AddNoteModal  from '../components/AddNoteModal'
+import useUIStore from '../store/uiStore'
 
 export default function NotesScreen() {
-  const { colors } = useTheme()
-
   const notes    = useNotesStore((s) => s.notes)
   const hydrated = useNotesStore((s) => s.hydrated)
   const addNote  = useNotesStore((s) => s.addNote)
   const editNote = useNotesStore((s) => s.editNote)
+  const { colors, typography, layout } = useTheme()
+  const { isAddNoteOpen, closeAddNote } = useUIStore()
 
   const [modalVisible, setModalVisible] = useState(false)
   const [editingNote, setEditingNote]   = useState(null)
@@ -50,8 +52,11 @@ export default function NotesScreen() {
   if (!hydrated) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Notes</Text>
+        <View style={[styles.header, { paddingHorizontal: layout.spacing.xl, paddingVertical: layout.spacing.md }]}>
+          <Text style={[typography.headingM, { color: colors.textPrimary }]}>Notes</Text>
+          <TouchableOpacity>
+            <Ionicons name="search-outline" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
         </View>
         <View style={{ padding: 16 }}>
           <NoteSkeleton /><NoteSkeleton /><NoteSkeleton />
@@ -62,11 +67,11 @@ export default function NotesScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Notes</Text>
-        <Text style={[styles.count, { color: colors.textMuted }]}>
-          {visibleNotes.length > 0 ? `${visibleNotes.length} note${visibleNotes.length !== 1 ? 's' : ''}` : ''}
-        </Text>
+      <View style={[styles.header, { paddingHorizontal: layout.spacing.xl, paddingVertical: layout.spacing.md }]}>
+        <Text style={[typography.headingM, { color: colors.textPrimary }]}>Notes</Text>
+        <TouchableOpacity>
+          <Ionicons name="search-outline" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
       </View>
 
       {visibleNotes.length === 0 ? (
@@ -91,10 +96,14 @@ export default function NotesScreen() {
         />
       )}
 
-      <FloatingActionButton onPress={handleAdd} />
+
       <AddNoteModal
-        visible={modalVisible}
-        onClose={() => { setModalVisible(false); setEditingNote(null) }}
+        visible={modalVisible || isAddNoteOpen}
+        onClose={() => { 
+          setModalVisible(false)
+          closeAddNote()
+          setEditingNote(null) 
+        }}
         onSubmit={handleSubmit}
         initialTitle={editingNote?.title}
         initialBody={editingNote?.body}
@@ -108,7 +117,7 @@ const styles = StyleSheet.create({
   header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 10 },
   title:         { fontSize: 26, fontWeight: '700' },
   count:         { fontSize: 13, fontWeight: '500' },
-  listContent:   { paddingHorizontal: 16, paddingBottom: 120 },
+  listContent:   { paddingHorizontal: 16, paddingBottom: 180 },
   sectionHeader: { fontSize: 11, fontWeight: '700', letterSpacing: 1.2, marginBottom: 8, marginTop: 4 },
   emptyState:    { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 80 },
   emptyIcon:     { fontSize: 52, marginBottom: 16 },
